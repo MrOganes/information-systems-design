@@ -16,6 +16,32 @@ class Customer:
         self.__country = self.__validate_non_empty_string(country, "Country")
         self.__date_joined = self.__validate_date_joined(date_joined)
 
+    # Статический метод для создания объекта из строки
+    @staticmethod
+    def from_string(data_str):
+        try:
+            # Предполагаем, что строка имеет формат: "id,first_name,last_name,email,phone_number,address,city,postal_code,country,date_joined"
+            data = data_str.split(',')
+            if len(data) != 10:
+                raise ValueError("Incorrect number of fields in the string.")
+
+            customer_id = int(data[0].strip())
+            first_name = data[1].strip()
+            last_name = data[2].strip()
+            email = data[3].strip()
+            phone_number = data[4].strip()
+            address = data[5].strip()
+            city = data[6].strip()
+            postal_code = int(data[7].strip())
+            country = data[8].strip()
+            date_joined = data[9].strip()
+
+            # Создание и возврат объекта Customer
+            return Customer(customer_id, first_name, last_name, email, phone_number, address, city, postal_code,
+                            country, date_joined)
+        except Exception as e:
+            raise ValueError(f"Error parsing customer data: {e}")
+
     # Getters
     def get_customer_id(self):
         return self.__customer_id
