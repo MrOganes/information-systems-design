@@ -3,7 +3,8 @@ from datetime import datetime
 
 
 class Customer:
-    def __init__(self, customer_id, first_name, last_name, email, phone_number, address, city, postal_code, country, date_joined):
+    def __init__(self, customer_id, first_name, last_name, email, phone_number,
+                 address, city, postal_code, country, date_joined):
         self.__customer_id = self.__validate_id(customer_id)
         self.__first_name = self.__validate_name(first_name)
         self.__last_name = self.__validate_name(last_name)
