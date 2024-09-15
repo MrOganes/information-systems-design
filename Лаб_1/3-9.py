@@ -149,3 +149,29 @@ class Customer:
                 return date_joined
         except ValueError:
             raise ValueError("Date Joined must be a valid datetime in the format YYYY-MM-DD HH:MM:SS.")
+
+    # Полная версия объекта
+    def __str__(self):
+        return (f"Customer [ID: {self.__customer_id}, Name: {self.__first_name} {self.__last_name}, "
+                f"Email: {self.__email}, Phone: {self.__phone_number}, Address: {self.__address}, "
+                f"City: {self.__city}, Postal Code: {self.__postal_code}, Country: {self.__country}, "
+                f"Date Joined: {self.__date_joined.strftime('%Y-%m-%d %H:%M:%S')}]")
+
+    # Краткая версия объекта (ключевая информация)
+    def short_info(self):
+        return f"Customer [ID: {self.__customer_id}, Name: {self.__first_name} {self.__last_name}, Email: {self.__email}]"
+
+    # Метод для сравнения объектов
+    def __eq__(self, other):
+        if isinstance(other, Customer):
+            return (self.__customer_id == other.__customer_id and
+                    self.__first_name == other.__first_name and
+                    self.__last_name == other.__last_name and
+                    self.__email == other.__email and
+                    self.__phone_number == other.__phone_number and
+                    self.__address == other.__address and
+                    self.__city == other.__city and
+                    self.__postal_code == other.__postal_code and
+                    self.__country == other.__country and
+                    self.__date_joined == other.__date_joined)
+        return False
