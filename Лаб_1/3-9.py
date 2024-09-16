@@ -5,9 +5,9 @@ from datetime import datetime
 class CustomerShortInfo:
     def __init__(self, customer_id, first_name, last_name, email):
         self.__customer_id = self.__validate_id(customer_id)
-        self.__first_name = self.__validate_name(first_name)
-        self.__last_name = self.__validate_name(last_name)
-        self.__email = self.__validate_email(email)
+        self.set_first_name(first_name)
+        self.set_last_name(last_name)
+        self.set_email(email)
 
     @staticmethod
     def from_string(data_str):
@@ -77,17 +77,20 @@ class CustomerShortInfo:
     def __str__(self):
         return f"Customer short info [ID: {self.__customer_id}, Name: {self.__first_name} {self.__last_name}, Email: {self.__email}]"
 
+    def __hash__(self):
+        return hash(self.get_first_name()) + hash(self.get_last_name()) + hash(self.get_customer_id()) + hash(self.get_email())
+
 
 class Customer(CustomerShortInfo):
     def __init__(self, customer_id, first_name, last_name, email, phone_number,
                  address, city, postal_code, country, date_joined):
         super().__init__(customer_id, first_name, last_name, email)
-        self.__phone_number = self.__validate_phone_number(phone_number)
-        self.__address = self.__validate_non_empty_string(address, "Address")
-        self.__city = self.__validate_non_empty_string(city, "City")
-        self.__postal_code = self.__validate_postal_code(postal_code)
-        self.__country = self.__validate_non_empty_string(country, "Country")
-        self.__date_joined = self.__validate_date_joined(date_joined)
+        self.set_phone_number(phone_number)
+        self.set_address(address)
+        self.set_city(city)
+        self.set_postal_code(postal_code)
+        self.set_country(country)
+        self.set_date_joined(date_joined)
 
     @staticmethod
     def from_string(data_str):
@@ -189,11 +192,5 @@ class Customer(CustomerShortInfo):
 
     def __eq__(self, other):
         if isinstance(other, Customer):
-            return (super().__eq__(other) and
-                    self.__phone_number == other.__phone_number and
-                    self.__address == other.__address and
-                    self.__city == other.__city and
-                    self.__postal_code == other.__postal_code and
-                    self.__country == other.__country and
-                    self.__date_joined == other.__date_joined)
+            return super().__eq__(other)
         return False
