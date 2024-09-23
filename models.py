@@ -265,10 +265,15 @@ class CustomerRepJson:
         self.customers.sort(key=lambda customer: customer.get_date_joined())
 
     # Проверка на уникальность ID и Email
-    def __is_unique(self, email):
-        for customer in self.customers:
-            if customer.get_email() == email:
-                return False
+    def __is_unique(self, email, unverifiable_customer_id=None):
+        if unverifiable_customer_id:
+            for customer in self.customers:
+                if customer.get_customer_id() != unverifiable_customer_id and customer.get_email() == email:
+                    return False
+        else:
+            for customer in self.customers:
+                if customer.get_email() == email:
+                    return False
         return True
 
     # Добавление объекта (формируется новый ID)
@@ -284,6 +289,9 @@ class CustomerRepJson:
 
     # Замена элемента по ID
     def replace_by_id(self, customer_id, new_customer):
+        if not self.__is_unique(new_customer.get_email(), customer_id):
+            raise ValueError(f"Customer with this email already exists.")
+
         for i, customer in enumerate(self.customers):
             if customer.get_customer_id() == customer_id:
                 self.customers[i] = new_customer
