@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import datetime
 
@@ -122,6 +123,28 @@ class Customer(CustomerShortInfo):
         except Exception as e:
             raise ValueError(f"Error parsing customer data: {e}")
 
+    @staticmethod
+    def from_dict(data: dict):
+        return Customer(
+            data['customer_id'], data['first_name'], data['last_name'], data['email'],
+            data['phone_number'], data['address'], data['city'], data['postal_code'],
+            data['country'], datetime.strptime(data['date_joined'], '%Y-%m-%d %H:%M:%S')
+        )
+
+    def to_dict(self):
+        return {
+            'customer_id': self.get_customer_id(),
+            'first_name': self.get_first_name(),
+            'last_name': self.get_last_name(),
+            'email': self.get_email(),
+            'phone_number': self.get_phone_number(),
+            'address': self.get_address(),
+            'city': self.get_city(),
+            'postal_code': self.get_postal_code(),
+            'country': self.get_country(),
+            'date_joined': self.get_date_joined().strftime('%Y-%m-%d %H:%M:%S')
+        }
+
     def get_phone_number(self):
         return self.__phone_number
 
@@ -200,3 +223,79 @@ class Customer(CustomerShortInfo):
         if isinstance(other, Customer):
             return super().__eq__(other)
         return False
+
+
+class CustomerRepJson:
+    def __init__(self, filename):
+        self.filename = filename
+        self.customers = self.read_all()
+
+    # Чтение всех значений из файла
+    def read_all(self):
+        try:
+            with open(self.filename, 'r') as file:
+                data = json.load(file)
+                return [Customer.from_dict(customer) for customer in data]
+        except FileNotFoundError:
+            return []
+
+    # Запись всех значений в файл
+    def save_all(self):
+        data = []
+        for cus in self.customers:
+            data.append(cus.to_dict())
+        with open(self.filename, 'w') as file:
+            json.dump([customer.to_dict() for customer in self.customers], file, indent=4)
+
+    # Получить объект по ID
+    def get_by_id(self, customer_id):
+        for customer in self.customers:
+            if customer.get_customer_id() == customer_id:
+                return customer
+        raise None
+
+    # Получить список k по счету объектов
+    def get_k_n_short_list(self, k, n):
+        start = (k - 1) * n
+        end = start + n
+        return self.customers[start:end]
+
+    # Сортировка элементов по выбранному полю
+    def sort_by_field(self):
+        self.customers.sort(key=lambda customer: customer.get_date_joined())
+
+    # Проверка на уникальность ID и Email
+    def __is_unique(self, email):
+        for customer in self.customers:
+            if customer.get_email() == email:
+                return False
+        return True
+
+    # Добавление объекта (формируется новый ID)
+    def add_customer(self, first_name, last_name, email, phone_number, address, city, postal_code, country, date_joined):
+        new_id = max([customer.get_customer_id() for customer in self.customers], default=0) + 1
+
+        if not self.__is_unique(email):
+            raise ValueError(f"Customer with this email already exists.")
+
+        new_customer = Customer(new_id, first_name, last_name, email, phone_number, address, city, postal_code, country, date_joined)
+        self.customers.append(new_customer)
+        self.save_all()
+
+    # Замена элемента по ID
+    def replace_by_id(self, customer_id, new_customer):
+        for i, customer in enumerate(self.customers):
+            if customer.get_customer_id() == customer_id:
+                self.customers[i] = new_customer
+                self.save_all()
+                return True
+        return False
+
+    # Удаление элемента по ID
+    def delete_by_id(self, customer_id):
+        self.customers = [customer for customer in self.customers if customer.get_customer_id() != customer_id]
+        self.save_all()
+
+    # Получить количество элементов
+    def get_count(self):
+        return len(self.customers)
