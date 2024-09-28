@@ -1,12 +1,14 @@
 import json
 import re
 from datetime import datetime
+
+import psycopg2 as psycopg2
 import yaml
 
 
 class CustomerShortInfo:
     def __init__(self, customer_id, first_name, last_name, email):
-        self.__customer_id = self.__validate_id(customer_id)
+        self.set_id(customer_id)
         self.set_first_name(first_name)
         self.set_last_name(last_name)
         self.set_email(email)
@@ -58,6 +60,9 @@ class CustomerShortInfo:
 
     def get_email(self):
         return self.__email
+
+    def set_id(self, customer_id):
+        self.__customer_id = self.__validate_id(customer_id)
 
     def set_first_name(self, first_name):
         self.__first_name = self.__validate_name(first_name)
@@ -226,120 +231,18 @@ class Customer(CustomerShortInfo):
         return False
 
 
-class CustomerRepJson:
+class CustomerRepBase:
     def __init__(self, filename):
         self.filename = filename
         self.customers = self.read_all()
 
-    # Чтение всех значений из файла
+    # Чтение всех значений (должен быть реализован в дочерних классах)
     def read_all(self):
-        try:
-            with open(self.filename, 'r') as file:
-                data = json.load(file)
-                return [Customer.from_dict(customer) for customer in data]
-        except FileNotFoundError:
-            return []
+        raise NotImplementedError("Метод должен быть реализован в дочернем классе")
 
-    # Запись всех значений в файл
-    def __save_all(self):
-        data = []
-        for cus in self.customers:
-            data.append(cus.to_dict())
-        with open(self.filename, 'w') as file:
-            json.dump([customer.to_dict() for customer in self.customers], file, indent=4)
-
-    # Получить объект по ID
-    def get_by_id(self, customer_id):
-        for customer in self.customers:
-            if customer.get_customer_id() == customer_id:
-                return customer
-        raise None
-
-    # Получить список k по счету объектов
-    def get_k_n_short_list(self, k, n):
-        start = (k - 1) * n
-        end = start + n
-        return self.customers[start:end]
-
-    # Сортировка элементов по выбранному полю
-    def sort_by_field(self):
-        self.customers.sort(key=lambda customer: customer.get_date_joined())
-
-    # Проверка на уникальность ID и Email
-    def __is_unique(self, email, unverifiable_customer_id=None):
-        if unverifiable_customer_id:
-            for customer in self.customers:
-                if customer.get_customer_id() != unverifiable_customer_id and customer.get_email() == email:
-                    return False
-        else:
-            for customer in self.customers:
-                if customer.get_email() == email:
-                    return False
-        return True
-
-    # Добавление объекта (формируется новый ID)
-    def add_customer(self, first_name, last_name, email, phone_number, address, city, postal_code, country, date_joined):
-        new_id = max([customer.get_customer_id() for customer in self.customers], default=0) + 1
-
-        if not self.__is_unique(email):
-            raise ValueError(f"Customer with this email already exists.")
-
-        new_customer = Customer(new_id, first_name, last_name, email, phone_number, address, city, postal_code, country, date_joined)
-        self.customers.append(new_customer)
-        self.__save_all()
-
-    # Замена элемента по ID
-    def replace_by_id(self, customer_id, new_customer):
-        if not self.__is_unique(new_customer.get_email(), customer_id):
-            raise ValueError(f"Customer with this email already exists.")
-
-        for i, customer in enumerate(self.customers):
-            if customer.get_customer_id() == customer_id:
-                self.customers[i] = new_customer
-                self.__save_all()
-                return True
-        return False
-
-    # Удаление элемента по ID
-    def delete_by_id(self, customer_id):
-        self.customers = [customer for customer in self.customers if customer.get_customer_id() != customer_id]
-        self.__save_all()
-
-    # Получить количество элементов
-    def get_count(self):
-        return len(self.customers)
-
-
-class CustomerRepYaml:
-    def __init__(self, filename):
-        self.filename = filename
-        self.customers = self.read_all()
-
-    # Чтение всех значений из файла
-    def read_all(self):
-        try:
-            with open(self.filename, 'r') as file:
-                data = yaml.safe_load(file)
-                return [Customer.from_dict(customer) for customer in data] if data else []
-        except FileNotFoundError:
-            return []
-
-    # Запись всех значений в файл
-    def __save_all(self):
-        with open(self.filename, 'w') as file:
-            yaml.safe_dump([customer.to_dict() for customer in self.customers], file)
-
-    # Проверка на уникальность ID и Email
-    def __is_unique(self, email, unverifiable_customer_id=None):
-        if unverifiable_customer_id:
-            for customer in self.customers:
-                if customer.get_customer_id() != unverifiable_customer_id and customer.get_email() == email:
-                    return False
-        else:
-            for customer in self.customers:
-                if customer.get_email() == email:
-                    return False
-        return True
+    # Запись всех значений (должен быть реализован в дочерних классах)
+    def save_all(self):
+        raise NotImplementedError("Метод должен быть реализован в дочернем классе")
 
     # Получить объект по ID
     def get_by_id(self, customer_id):
@@ -358,16 +261,28 @@ class CustomerRepYaml:
     def sort_by_field(self):
         self.customers.sort(key=lambda customer: customer.get_date_joined())
 
-    # Добавление объекта (формируется новый ID)
-    def add_customer(self, first_name, last_name, email, phone_number, address, city, postal_code, country, date_joined):
-        new_id = max([customer.get_customer_id() for customer in self.customers], default=0) + 1
+    # Проверка на уникальность ID и Email
+    def __is_unique(self, email, unverifiable_customer_id=None):
+        if unverifiable_customer_id:
+            for customer in self.customers:
+                if customer.get_customer_id() != unverifiable_customer_id and customer.get_email() == email:
+                    return False
+        else:
+            for customer in self.customers:
+                if customer.get_email() == email:
+                    return False
+        return True
 
-        if not self.__is_unique(email):
+    # Добавление объекта (формируется новый ID)
+    def add_customer(self, customer):
+        new_id = max([customer.get_customer_id() for customer in self.customers], default=0) + 1
+        customer.set_id(new_id)
+
+        if not self.__is_unique(customer.get_email()):
             raise ValueError(f"Customer with this email already exists.")
 
-        new_customer = Customer(new_id, first_name, last_name, email, phone_number, address, city, postal_code, country, date_joined)
-        self.customers.append(new_customer)
-        self.__save_all()
+        self.customers.append(customer)
+        self.save_all()
 
     # Замена элемента по ID
     def replace_by_id(self, customer_id, new_customer):
@@ -377,15 +292,108 @@ class CustomerRepYaml:
         for i, customer in enumerate(self.customers):
             if customer.get_customer_id() == customer_id:
                 self.customers[i] = new_customer
-                self.__save_all()
+                self.save_all()
                 return True
         return False
 
     # Удаление элемента по ID
     def delete_by_id(self, customer_id):
         self.customers = [customer for customer in self.customers if customer.get_customer_id() != customer_id]
-        self.__save_all()
+        self.save_all()
 
     # Получить количество элементов
     def get_count(self):
         return len(self.customers)
+
+
+class CustomerRepJson(CustomerRepBase):
+    # Чтение всех значений из JSON-файла
+    def read_all(self):
+        try:
+            with open(self.filename, 'r') as file:
+                data = json.load(file)
+                return [Customer.from_dict(customer) for customer in data]
+        except FileNotFoundError:
+            return []
+
+    # Запись всех значений в JSON-файл
+    def save_all(self):
+        with open(self.filename, 'w') as file:
+            json.dump([customer.to_dict() for customer in self.customers], file, indent=4)
+
+
+class CustomerRepYaml(CustomerRepBase):
+    # Чтение всех значений из YAML-файла
+    def read_all(self):
+        try:
+            with open(self.filename, 'r') as file:
+                data = yaml.safe_load(file) or []
+                return [Customer.from_dict(customer) for customer in data]
+        except FileNotFoundError:
+            return []
+
+    # Запись всех значений в YAML-файл
+    def save_all(self):
+        with open(self.filename, 'w') as file:
+            yaml.safe_dump([customer.to_dict() for customer in self.customers], file, default_flow_style=False)
+
+
+class CustomerRepPostgres:
+    def __init__(self, db_name, user, password, host='localhost', port='5432'):
+        self.__connection = psycopg2.connect(
+            dbname=db_name,
+            user=user,
+            password=password,
+            host=host,
+            port=port
+        )
+        self.__cursor = self.__connection.cursor()
+
+    def add_customer(self, customer):
+        query = """
+            INSERT INTO customers (first_name, last_name, email, phone_number, address, city, postal_code, country, date_joined)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING customer_id
+        """
+        data = customer.to_dict()
+
+        self.__cursor.execute(query, (data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9]))
+        new_id = self.__cursor.fetchone()[0]
+        self.__connection.commit()
+        return new_id
+
+    # Получить объект по ID
+    def get_by_id(self, customer_id):
+        query = "SELECT * FROM customers WHERE customer_id = %s"
+        self.__cursor.execute(query, (customer_id,))
+        data = self.__cursor.fetchone()
+        result = Customer(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9])
+        if result:
+            return result
+        return None
+
+    def get_k_n_short_list(self, k, n):
+        offset = (k - 1) * n
+        query = "SELECT * FROM customers ORDER BY customer_id LIMIT %s OFFSET %s"
+        self.__cursor.execute(query, (n, offset))
+        return self.__cursor.fetchall()
+
+    def replace_by_id(self, customer_id, new_customer):
+        query = """
+            UPDATE customers 
+            SET first_name = %s, last_name = %s, email = %s, phone_number = %s, address = %s, city = %s, postal_code = %s, country = %s, date_joined = %s
+            WHERE customer_id = %s
+        """
+        data = new_customer.to_dict()
+        self.__cursor.execute(query, (data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], customer_id))
+        self.__connection.commit()
+
+    def delete_by_id(self, customer_id):
+        query = "DELETE FROM customers WHERE customer_id = %s"
+        self.__cursor.execute(query, (customer_id,))
+        self.__connection.commit()
+
+    def get_count(self):
+        query = "SELECT COUNT(*) FROM customers"
+        self.__cursor.execute(query)
+        return self.__cursor.fetchone()[0]
