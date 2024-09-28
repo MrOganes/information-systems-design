@@ -1,6 +1,7 @@
 import json
 import re
 from datetime import datetime
+import yaml
 
 
 class CustomerShortInfo:
@@ -240,7 +241,7 @@ class CustomerRepJson:
             return []
 
     # Запись всех значений в файл
-    def save_all(self):
+    def __save_all(self):
         data = []
         for cus in self.customers:
             data.append(cus.to_dict())
@@ -285,7 +286,7 @@ class CustomerRepJson:
 
         new_customer = Customer(new_id, first_name, last_name, email, phone_number, address, city, postal_code, country, date_joined)
         self.customers.append(new_customer)
-        self.save_all()
+        self.__save_all()
 
     # Замена элемента по ID
     def replace_by_id(self, customer_id, new_customer):
@@ -295,14 +296,95 @@ class CustomerRepJson:
         for i, customer in enumerate(self.customers):
             if customer.get_customer_id() == customer_id:
                 self.customers[i] = new_customer
-                self.save_all()
+                self.__save_all()
                 return True
         return False
 
     # Удаление элемента по ID
     def delete_by_id(self, customer_id):
         self.customers = [customer for customer in self.customers if customer.get_customer_id() != customer_id]
-        self.save_all()
+        self.__save_all()
+
+    # Получить количество элементов
+    def get_count(self):
+        return len(self.customers)
+
+
+class CustomerRepYaml:
+    def __init__(self, filename):
+        self.filename = filename
+        self.customers = self.read_all()
+
+    # Чтение всех значений из файла
+    def read_all(self):
+        try:
+            with open(self.filename, 'r') as file:
+                data = yaml.safe_load(file)
+                return [Customer.from_dict(customer) for customer in data] if data else []
+        except FileNotFoundError:
+            return []
+
+    # Запись всех значений в файл
+    def __save_all(self):
+        with open(self.filename, 'w') as file:
+            yaml.safe_dump([customer.to_dict() for customer in self.customers], file)
+
+    # Проверка на уникальность ID и Email
+    def __is_unique(self, email, unverifiable_customer_id=None):
+        if unverifiable_customer_id:
+            for customer in self.customers:
+                if customer.get_customer_id() != unverifiable_customer_id and customer.get_email() == email:
+                    return False
+        else:
+            for customer in self.customers:
+                if customer.get_email() == email:
+                    return False
+        return True
+
+    # Получить объект по ID
+    def get_by_id(self, customer_id):
+        for customer in self.customers:
+            if customer.get_customer_id() == customer_id:
+                return customer
+        raise ValueError(f"Customer with ID {customer_id} not found.")
+
+    # Получить список k по счету объектов
+    def get_k_n_short_list(self, k, n):
+        start = (k - 1) * n
+        end = start + n
+        return self.customers[start:end]
+
+    # Сортировка элементов по выбранному полю
+    def sort_by_field(self):
+        self.customers.sort(key=lambda customer: customer.get_date_joined())
+
+    # Добавление объекта (формируется новый ID)
+    def add_customer(self, first_name, last_name, email, phone_number, address, city, postal_code, country, date_joined):
+        new_id = max([customer.get_customer_id() for customer in self.customers], default=0) + 1
+
+        if not self.__is_unique(email):
+            raise ValueError(f"Customer with this email already exists.")
+
+        new_customer = Customer(new_id, first_name, last_name, email, phone_number, address, city, postal_code, country, date_joined)
+        self.customers.append(new_customer)
+        self.__save_all()
+
+    # Замена элемента по ID
+    def replace_by_id(self, customer_id, new_customer):
+        if not self.__is_unique(new_customer.get_email(), customer_id):
+            raise ValueError(f"Customer with this email already exists.")
+
+        for i, customer in enumerate(self.customers):
+            if customer.get_customer_id() == customer_id:
+                self.customers[i] = new_customer
+                self.__save_all()
+                return True
+        return False
+
+    # Удаление элемента по ID
+    def delete_by_id(self, customer_id):
+        self.customers = [customer for customer in self.customers if customer.get_customer_id() != customer_id]
+        self.__save_all()
 
     # Получить количество элементов
     def get_count(self):

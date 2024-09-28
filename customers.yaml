@@ -1,0 +1,20 @@
+- address: 123 Main St
+  city: New York
+  country: USA
+  customer_id: 1
+  date_joined: '2024-09-28 09:42:22'
+  email: john.doe@example.com
+  first_name: John
+  last_name: Doe
+  phone_number: '+1234567890'
+  postal_code: 10001
+- address: 123 Main St
+  city: New York
+  country: USA
+  customer_id: 2
+  date_joined: '2024-09-28 09:42:22'
+  email: john.doe2@example.com
+  first_name: John
+  last_name: Doe
+  phone_number: '+1234567890'
+  postal_code: 10001
