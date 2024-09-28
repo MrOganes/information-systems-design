@@ -4,6 +4,7 @@ from datetime import datetime
 
 import psycopg2 as psycopg2
 import yaml
+from psycopg2.extras import DictCursor
 
 
 class CustomerShortInfo:
@@ -338,16 +339,45 @@ class CustomerRepYaml(CustomerRepBase):
             yaml.safe_dump([customer.to_dict() for customer in self.customers], file, default_flow_style=False)
 
 
+class DatabaseConnection:
+    __instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls.__instance is None:
+            cls.__instance = super(DatabaseConnection, cls).__new__(cls)
+        return cls.__instance
+
+    def __init__(self, db_name, user, password, host='localhost', port='5432'):
+        if not hasattr(self, 'connection'):
+            self.connection = psycopg2.connect(
+                dbname=db_name,
+                user=user,
+                password=password,
+                host=host,
+                port=port
+            )
+            self.cursor = self.connection.cursor(cursor_factory=DictCursor)
+
+    def execute(self, query, params=None):
+        self.cursor.execute(query, params)
+
+    def fetchone(self):
+        return self.cursor.fetchone()
+
+    def fetchall(self):
+        return self.cursor.fetchall()
+
+    def commit(self):
+        self.connection.commit()
+
+    def close(self):
+        self.cursor.close()
+        self.connection.close()
+
+
 class CustomerRepPostgres:
     def __init__(self, db_name, user, password, host='localhost', port='5432'):
-        self.__connection = psycopg2.connect(
-            dbname=db_name,
-            user=user,
-            password=password,
-            host=host,
-            port=port
-        )
-        self.__cursor = self.__connection.cursor()
+        self.db = DatabaseConnection(db_name, user, password, host, port)
 
     def add_customer(self, customer):
         query = """
@@ -356,27 +386,28 @@ class CustomerRepPostgres:
             RETURNING customer_id
         """
         data = customer.to_dict()
-
-        self.__cursor.execute(query, (data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9]))
-        new_id = self.__cursor.fetchone()[0]
-        self.__connection.commit()
+        self.db.execute(query, (data['first_name'], data['last_name'], data['email'], data['phone_number'],
+                                data['address'], data['city'], data['postal_code'], data['country'], data['date_joined']))
+        new_id = self.db.fetchone()[0]
+        self.db.commit()
         return new_id
 
     # Получить объект по ID
     def get_by_id(self, customer_id):
         query = "SELECT * FROM customers WHERE customer_id = %s"
-        self.__cursor.execute(query, (customer_id,))
-        data = self.__cursor.fetchone()
-        result = Customer(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9])
-        if result:
-            return result
+        self.db.execute(query, (customer_id,))
+        data = self.db.fetchone()
+        if data:
+            return Customer(data['customer_id'], data['first_name'], data['last_name'], data['email'],
+                            data['phone_number'], data['address'], data['city'], data['postal_code'],
+                            data['country'], data['date_joined'])
         return None
 
     def get_k_n_short_list(self, k, n):
         offset = (k - 1) * n
         query = "SELECT * FROM customers ORDER BY customer_id LIMIT %s OFFSET %s"
-        self.__cursor.execute(query, (n, offset))
-        return self.__cursor.fetchall()
+        self.db.execute(query, (n, offset))
+        return self.db.fetchall()
 
     def replace_by_id(self, customer_id, new_customer):
         query = """
@@ -385,15 +416,17 @@ class CustomerRepPostgres:
             WHERE customer_id = %s
         """
         data = new_customer.to_dict()
-        self.__cursor.execute(query, (data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], customer_id))
-        self.__connection.commit()
+        self.db.execute(query, (data['first_name'], data['last_name'], data['email'], data['phone_number'],
+                                data['address'], data['city'], data['postal_code'], data['country'],
+                                data['date_joined'], customer_id))
+        self.db.commit()
 
     def delete_by_id(self, customer_id):
         query = "DELETE FROM customers WHERE customer_id = %s"
-        self.__cursor.execute(query, (customer_id,))
-        self.__connection.commit()
+        self.db.execute(query, (customer_id,))
+        self.db.commit()
 
     def get_count(self):
         query = "SELECT COUNT(*) FROM customers"
-        self.__cursor.execute(query)
-        return self.__cursor.fetchone()[0]
+        self.db.execute(query)
+        return self.db.fetchone()[0]
