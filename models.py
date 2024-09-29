@@ -86,7 +86,8 @@ class CustomerShortInfo:
         return f"Customer short info [ID: {self.__customer_id}, Name: {self.__first_name} {self.__last_name}, Email: {self.__email}]"
 
     def __hash__(self):
-        return hash(self.get_first_name()) + hash(self.get_last_name()) + hash(self.get_customer_id()) + hash(self.get_email())
+        return hash(self.get_first_name()) + hash(self.get_last_name()) + hash(self.get_customer_id()) + hash(
+            self.get_email())
 
 
 class Customer(CustomerShortInfo):
@@ -387,7 +388,8 @@ class CustomerRepPostgres:
         """
         data = customer.to_dict()
         self.db.execute(query, (data['first_name'], data['last_name'], data['email'], data['phone_number'],
-                                data['address'], data['city'], data['postal_code'], data['country'], data['date_joined']))
+                                data['address'], data['city'], data['postal_code'], data['country'],
+                                data['date_joined']))
         new_id = self.db.fetchone()[0]
         self.db.commit()
         return new_id
@@ -430,3 +432,37 @@ class CustomerRepPostgres:
         query = "SELECT COUNT(*) FROM customers"
         self.db.execute(query)
         return self.db.fetchone()[0]
+
+
+class CustomerRepPostgresAdapter(CustomerRepBase):
+    def __init__(self, db_name, user, password, host='localhost', port='5432'):
+        # Мы передаем filename как None, так как это не нужно для Postgres.
+        super().__init__(None)
+        self.rep_postgres = CustomerRepPostgres(db_name, user, password, host, port)
+
+    # Реализуем методы для работы с Postgres
+    def read_all(self):
+        # Этот метод можно оставить пустым или возвращать данные из Postgres при необходимости.
+        pass
+
+    def save_all(self):
+        # В случае с Postgres вызов этого метода может быть неактуальным, так как изменения сохраняются напрямую в БД.
+        pass
+
+    def add_customer(self, customer):
+        return self.rep_postgres.add_customer(customer)
+
+    def get_by_id(self, customer_id):
+        return self.rep_postgres.get_by_id(customer_id)
+
+    def get_k_n_short_list(self, k, n):
+        return self.rep_postgres.get_k_n_short_list(k, n)
+
+    def replace_by_id(self, customer_id, new_customer):
+        return self.rep_postgres.replace_by_id(customer_id, new_customer)
+
+    def delete_by_id(self, customer_id):
+        return self.rep_postgres.delete_by_id(customer_id)
+
+    def get_count(self):
+        return self.rep_postgres.get_count()
