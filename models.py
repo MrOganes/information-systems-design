@@ -133,10 +133,18 @@ class Customer(CustomerShortInfo):
 
     @staticmethod
     def from_dict(data: dict):
+        date_time = datetime.strptime(data['date_joined'], '%Y-%m-%d %H:%M:%S') if data.get('date_joined') else None
         return Customer(
-            data['customer_id'], data['first_name'], data['last_name'], data['email'],
-            data['phone_number'], data['address'], data['city'], data['postal_code'],
-            data['country'], datetime.strptime(data['date_joined'], '%Y-%m-%d %H:%M:%S')
+            data['customer_id'],
+            data['first_name'],
+            data['last_name'],
+            data['email'],
+            data.get('phone_number'),
+            data.get('address'),
+            data.get('city'),
+            data.get('postal_code'),
+            data.get('country'),
+            date_time
         )
 
     def to_dict(self):
@@ -145,31 +153,43 @@ class Customer(CustomerShortInfo):
             'first_name': self.get_first_name(),
             'last_name': self.get_last_name(),
             'email': self.get_email(),
-            'phone_number': self.get_phone_number(),
-            'address': self.get_address(),
-            'city': self.get_city(),
-            'postal_code': self.get_postal_code(),
-            'country': self.get_country(),
-            'date_joined': self.get_date_joined().strftime('%Y-%m-%d %H:%M:%S')
+            'phone_number': self.get_phone_number() if hasattr(self, 'phone_number') else None,
+            'address': self.get_address() if hasattr(self, 'address') else None,
+            'city': self.get_city() if hasattr(self, 'city') else None,
+            'postal_code': self.get_postal_code() if hasattr(self, 'postal_code') else None,
+            'country': self.get_country() if hasattr(self, 'country') else None,
+            'date_joined': self.get_date_joined().strftime('%Y-%m-%d %H:%M:%S') if hasattr(self, 'date_joined') else None
         }
 
     def get_phone_number(self):
-        return self.__phone_number
+        if hasattr(self, '_Customer__phone_number'):
+            return self.__phone_number
+        return None
 
     def get_address(self):
-        return self.__address
+        if hasattr(self, '_Customer__address'):
+            return self.__address
+        return None
 
     def get_city(self):
-        return self.__city
+        if hasattr(self, '_Customer__city'):
+            return self.__city
+        return None
 
     def get_postal_code(self):
-        return self.__postal_code
+        if hasattr(self, '_Customer__postal_code'):
+            return self.__postal_code
+        return None
 
     def get_country(self):
-        return self.__country
+        if hasattr(self, '_Customer__country'):
+            return self.__country
+        return None
 
     def get_date_joined(self):
-        return self.__date_joined
+        if hasattr(self, '_Customer__date_joined'):
+            return self.__date_joined
+        return None
 
     def set_phone_number(self, phone_number):
         self.__phone_number = self.__validate_phone_number(phone_number)
@@ -219,10 +239,15 @@ class Customer(CustomerShortInfo):
             raise ValueError("Date Joined must be a valid datetime in the format YYYY-MM-DD HH:MM:SS.")
 
     def __str__(self):
-        return (f"Customer [ID: {self.get_customer_id()}, Name: {self.get_first_name()} {self.get_last_name()}, "
-                f"Email: {self.get_email()}, Phone: {self.__phone_number}, Address: {self.__address}, "
-                f"City: {self.__city}, Postal Code: {self.__postal_code}, Country: {self.__country}, "
-                f"Date Joined: {self.__date_joined.strftime('%Y-%m-%d %H:%M:%S')}]")
+        return (f"Customer [ID: {self.get_customer_id()}, "
+                f"Name: {self.get_first_name()} {self.get_last_name()}, "
+                f"Email: {self.get_email()}, "
+                f"Phone: {self.get_phone_number()}, "
+                f"Address: {self.get_address()}, "
+                f"City: {self.get_city()}, "
+                f"Postal Code: {self.get_postal_code()}, "
+                f"Country: {self.get_country()}, "
+                f"Date Joined: {self.get_date_joined()}]")
 
     def short_info(self):
         return super().__str__()
@@ -401,8 +426,8 @@ class CustomerRepPostgres:
         data = self.db.fetchone()
         if data:
             return Customer(data['customer_id'], data['first_name'], data['last_name'], data['email'],
-                            data['phone_number'], data['address'], data['city'], data['postal_code'],
-                            data['country'], data['date_joined'])
+                            data.get('phone_number'), data.get('address'), data.get('city'), data.get('postal_code'),
+                            data.get('country'), data.get('date_joined'))
         return None
 
     def get_k_n_short_list(self, k, n):
