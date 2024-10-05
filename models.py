@@ -1,5 +1,6 @@
 import json
 import re
+from abc import ABC, abstractmethod
 from datetime import datetime
 
 import psycopg2 as psycopg2
@@ -10,7 +11,7 @@ from psycopg2.extras import DictCursor
 class CustomerShortInfo:
     def __init__(self, first_name, last_name, email, customer_id=None):
         if customer_id:
-            self.__set_id(customer_id)
+            self._set_id(customer_id)
         self.set_first_name(first_name)
         self.set_last_name(last_name)
         self.set_email(email)
@@ -71,7 +72,7 @@ class CustomerShortInfo:
             return self.__email
         return None
 
-    def __set_id(self, customer_id):
+    def _set_id(self, customer_id):
         self.__customer_id = self.__validate_id(customer_id)
 
     def set_first_name(self, first_name):
@@ -268,33 +269,76 @@ class Customer(CustomerShortInfo):
         return False
 
 
-class CustomerRepBase:
-    def __init__(self, filename):
-        self.filename = filename
-        self.customers = self.read_all()
+class ICustomerRepository(ABC):
+    @abstractmethod
+    def add_customer(self, customer):
+        pass
 
-    # Чтение всех значений (должен быть реализован в дочерних классах)
-    def read_all(self):
-        raise NotImplementedError("Метод должен быть реализован в дочернем классе")
+    @abstractmethod
+    def get_by_id(self, customer_id):
+        pass
 
-    # Запись всех значений (должен быть реализован в дочерних классах)
-    def save_all(self):
-        raise NotImplementedError("Метод должен быть реализован в дочернем классе")
+    @abstractmethod
+    def get_k_n_short_list(self, k, n):
+        pass
 
-    # Получить объект по ID
+    @abstractmethod
+    def replace_by_id(self, new_customer):
+        pass
+
+    @abstractmethod
+    def delete_by_id(self, customer_id):
+        pass
+
+    @abstractmethod
+    def get_count(self):
+        pass
+
+
+class CustomerRepBase(ICustomerRepository):
+    def __init__(self, strategy):
+        self.strategy = strategy
+        self.customers = strategy.read_all()
+
+    def add_customer(self, customer):
+        new_id = max([customer.get_customer_id() for customer in self.customers], default=0) + 1
+        customer._set_id(new_id)
+
+        if not self.__is_unique(customer.get_email()):
+            raise ValueError(f"Customer with this email already exists.")
+
+        self.customers.append(customer)
+        self.strategy.save_all(self.customers)
+
     def get_by_id(self, customer_id):
         for customer in self.customers:
             if customer.get_customer_id() == customer_id:
                 return customer
         raise ValueError(f"Customer with ID {customer_id} not found.")
 
-    # Получить список k по счету объектов
     def get_k_n_short_list(self, k, n):
         start = (k - 1) * n
         end = start + n
         return self.customers[start:end]
 
-    # Сортировка элементов по выбранному полю
+    def replace_by_id(self, new_customer):
+        if not self.__is_unique(new_customer.get_email(), new_customer.get_customer_id()):
+            raise ValueError(f"Customer with this email already exists.")
+
+        for i, customer in enumerate(self.customers):
+            if customer.get_customer_id() == new_customer.get_customer_id():
+                self.customers[i] = new_customer
+                self.strategy.save_all(self.customers)
+                return True
+        return False
+
+    def delete_by_id(self, customer_id):
+        self.customers = [customer for customer in self.customers if customer.get_customer_id() != customer_id]
+        self.strategy.save_all(self.customers)
+
+    def get_count(self):
+        return len(self.customers)
+
     def sort_by_field(self):
         self.customers.sort(key=lambda customer: customer.get_date_joined())
 
@@ -310,41 +354,19 @@ class CustomerRepBase:
                     return False
         return True
 
-    # Добавление объекта (формируется новый ID)
-    def add_customer(self, customer):
-        new_id = max([customer.get_customer_id() for customer in self.customers], default=0) + 1
-        customer.__set_id(new_id)
 
-        if not self.__is_unique(customer.get_email()):
-            raise ValueError(f"Customer with this email already exists.")
+class FileStrategy:
+    def read_all(self):
+        raise NotImplementedError("Метод должен быть реализован в конкретной стратегии")
 
-        self.customers.append(customer)
-        self.save_all()
-
-    # Замена элемента по ID
-    def replace_by_id(self, new_customer):
-        if not self.__is_unique(new_customer.get_email(), new_customer.get_customer_id()):
-            raise ValueError(f"Customer with this email already exists.")
-
-        for i, customer in enumerate(self.customers):
-            if customer.get_customer_id() == new_customer.get_customer_id():
-                self.customers[i] = new_customer
-                self.save_all()
-                return True
-        return False
-
-    # Удаление элемента по ID
-    def delete_by_id(self, customer_id):
-        self.customers = [customer for customer in self.customers if customer.get_customer_id() != customer_id]
-        self.save_all()
-
-    # Получить количество элементов
-    def get_count(self):
-        return len(self.customers)
+    def save_all(self, customers):
+        raise NotImplementedError("Метод должен быть реализован в конкретной стратегии")
 
 
-class CustomerRepJson(CustomerRepBase):
-    # Чтение всех значений из JSON-файла
+class JsonFileStrategy(FileStrategy):
+    def __init__(self, filename):
+        self.filename = filename
+
     def read_all(self):
         try:
             with open(self.filename, 'r') as file:
@@ -353,14 +375,15 @@ class CustomerRepJson(CustomerRepBase):
         except FileNotFoundError:
             return []
 
-    # Запись всех значений в JSON-файл
-    def save_all(self):
+    def save_all(self, customers):
         with open(self.filename, 'w') as file:
-            json.dump([customer.to_dict() for customer in self.customers], file, indent=4)
+            json.dump([customer.to_dict() for customer in customers], file, indent=4)
 
 
-class CustomerRepYaml(CustomerRepBase):
-    # Чтение всех значений из YAML-файла
+class YamlFileStrategy(FileStrategy):
+    def __init__(self, filename):
+        self.filename = filename
+
     def read_all(self):
         try:
             with open(self.filename, 'r') as file:
@@ -369,10 +392,9 @@ class CustomerRepYaml(CustomerRepBase):
         except FileNotFoundError:
             return []
 
-    # Запись всех значений в YAML-файл
-    def save_all(self):
+    def save_all(self, customers):
         with open(self.filename, 'w') as file:
-            yaml.safe_dump([customer.to_dict() for customer in self.customers], file, default_flow_style=False)
+            yaml.safe_dump([customer.to_dict() for customer in customers], file, default_flow_style=False)
 
 
 class DatabaseConnection:
@@ -435,9 +457,16 @@ class CustomerRepPostgres:
         self.db.execute(query, (customer_id,))
         data = self.db.fetchone()
         if data:
-            return Customer(data.get('customer_id'), data['first_name'], data['last_name'], data['email'],
-                            data.get('phone_number'), data.get('address'), data.get('city'), data.get('postal_code'),
-                            data.get('country'), data.get('date_joined'))
+            return Customer(customer_id=data.get('customer_id'),
+                            first_name=data['first_name'],
+                            last_name=data['last_name'],
+                            email=data['email'],
+                            phone_number=data.get('phone_number'),
+                            address=data.get('address'),
+                            city=data.get('city'),
+                            postal_code=data.get('postal_code'),
+                            country=data.get('country'),
+                            date_joined=data.get('date_joined'))
         return None
 
     def get_k_n_short_list(self, k, n):
@@ -469,20 +498,9 @@ class CustomerRepPostgres:
         return self.db.fetchone()[0]
 
 
-class CustomerRepPostgresAdapter(CustomerRepBase):
+class CustomerRepPostgresAdapter(ICustomerRepository):
     def __init__(self, db_name, user, password, host='localhost', port='5432'):
-        # Мы передаем filename как None, так как это не нужно для Postgres.
-        super().__init__(None)
         self.rep_postgres = CustomerRepPostgres(db_name, user, password, host, port)
-
-    # Реализуем методы для работы с Postgres
-    def read_all(self):
-        # Этот метод можно оставить пустым или возвращать данные из Postgres при необходимости.
-        pass
-
-    def save_all(self):
-        # В случае с Postgres вызов этого метода может быть неактуальным, так как изменения сохраняются напрямую в БД.
-        pass
 
     def add_customer(self, customer):
         return self.rep_postgres.add_customer(customer)
