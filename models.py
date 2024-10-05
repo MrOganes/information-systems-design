@@ -10,7 +10,7 @@ from psycopg2.extras import DictCursor
 class CustomerShortInfo:
     def __init__(self, first_name, last_name, email, customer_id=None):
         if customer_id:
-            self.set_id(customer_id)
+            self.__set_id(customer_id)
         self.set_first_name(first_name)
         self.set_last_name(last_name)
         self.set_email(email)
@@ -71,7 +71,7 @@ class CustomerShortInfo:
             return self.__email
         return None
 
-    def set_id(self, customer_id):
+    def __set_id(self, customer_id):
         self.__customer_id = self.__validate_id(customer_id)
 
     def set_first_name(self, first_name):
@@ -313,7 +313,7 @@ class CustomerRepBase:
     # Добавление объекта (формируется новый ID)
     def add_customer(self, customer):
         new_id = max([customer.get_customer_id() for customer in self.customers], default=0) + 1
-        customer.set_id(new_id)
+        customer.__set_id(new_id)
 
         if not self.__is_unique(customer.get_email()):
             raise ValueError(f"Customer with this email already exists.")
@@ -322,12 +322,12 @@ class CustomerRepBase:
         self.save_all()
 
     # Замена элемента по ID
-    def replace_by_id(self, customer_id, new_customer):
-        if not self.__is_unique(new_customer.get_email(), customer_id):
+    def replace_by_id(self, new_customer):
+        if not self.__is_unique(new_customer.get_email(), new_customer.get_customer_id()):
             raise ValueError(f"Customer with this email already exists.")
 
         for i, customer in enumerate(self.customers):
-            if customer.get_customer_id() == customer_id:
+            if customer.get_customer_id() == new_customer.get_customer_id():
                 self.customers[i] = new_customer
                 self.save_all()
                 return True
@@ -435,7 +435,7 @@ class CustomerRepPostgres:
         self.db.execute(query, (customer_id,))
         data = self.db.fetchone()
         if data:
-            return Customer(data['customer_id'], data['first_name'], data['last_name'], data['email'],
+            return Customer(data.get('customer_id'), data['first_name'], data['last_name'], data['email'],
                             data.get('phone_number'), data.get('address'), data.get('city'), data.get('postal_code'),
                             data.get('country'), data.get('date_joined'))
         return None
@@ -446,16 +446,16 @@ class CustomerRepPostgres:
         self.db.execute(query, (n, offset))
         return self.db.fetchall()
 
-    def replace_by_id(self, customer_id, new_customer):
+    def replace_by_id(self, new_customer):
         query = """
             UPDATE customers 
             SET first_name = %s, last_name = %s, email = %s, phone_number = %s, address = %s, city = %s, postal_code = %s, country = %s, date_joined = %s
             WHERE customer_id = %s
         """
         data = new_customer.to_dict()
-        self.db.execute(query, (data['first_name'], data['last_name'], data['email'], data['phone_number'],
-                                data['address'], data['city'], data['postal_code'], data['country'],
-                                data['date_joined'], customer_id))
+        self.db.execute(query, (data.get('first_name'), data.get('last_name'), data.get('email'), data.get('phone_number'),
+                                data.get('address'), data.get('city'), data.get('postal_code'), data.get('country'),
+                                data.get('date_joined'), data.get('customer_id')))
         self.db.commit()
 
     def delete_by_id(self, customer_id):
@@ -493,15 +493,11 @@ class CustomerRepPostgresAdapter(CustomerRepBase):
     def get_k_n_short_list(self, k, n):
         return self.rep_postgres.get_k_n_short_list(k, n)
 
-    def replace_by_id(self, customer_id, new_customer):
-        return self.rep_postgres.replace_by_id(customer_id, new_customer)
+    def replace_by_id(self, new_customer):
+        return self.rep_postgres.replace_by_id(new_customer)
 
     def delete_by_id(self, customer_id):
         return self.rep_postgres.delete_by_id(customer_id)
 
     def get_count(self):
         return self.rep_postgres.get_count()
-
-
-a = Customer(customer_id=1, first_name='a',last_name='a',email='a@gmail.com')
-print(a)
