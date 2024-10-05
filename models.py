@@ -8,8 +8,9 @@ from psycopg2.extras import DictCursor
 
 
 class CustomerShortInfo:
-    def __init__(self, customer_id, first_name, last_name, email):
-        self.set_id(customer_id)
+    def __init__(self, first_name, last_name, email, customer_id=None):
+        if customer_id:
+            self.set_id(customer_id)
         self.set_first_name(first_name)
         self.set_last_name(last_name)
         self.set_email(email)
@@ -27,7 +28,7 @@ class CustomerShortInfo:
             last_name = data[2].strip()
             email = data[3].strip()
 
-            return CustomerShortInfo(customer_id, first_name, last_name, email)
+            return CustomerShortInfo(customer_id=customer_id, first_name=first_name, last_name=last_name, email=email)
         except Exception as e:
             raise ValueError(f"Error parsing CustomerShortInfo data: {e}")
 
@@ -51,16 +52,24 @@ class CustomerShortInfo:
         raise ValueError("Invalid email format.")
 
     def get_customer_id(self):
-        return self.__customer_id
+        if hasattr(self, '_CustomerShortInfo__customer_id'):
+            return self.__customer_id
+        return None
 
     def get_first_name(self):
-        return self.__first_name
+        if hasattr(self, '_CustomerShortInfo__first_name'):
+            return self.__first_name
+        return None
 
     def get_last_name(self):
-        return self.__last_name
+        if hasattr(self, '_CustomerShortInfo__last_name'):
+            return self.__last_name
+        return None
 
     def get_email(self):
-        return self.__email
+        if hasattr(self, '_CustomerShortInfo__email'):
+            return self.__email
+        return None
 
     def set_id(self, customer_id):
         self.__customer_id = self.__validate_id(customer_id)
@@ -76,14 +85,14 @@ class CustomerShortInfo:
 
     def __eq__(self, other):
         if isinstance(other, CustomerShortInfo):
-            return (self.__customer_id == other.__customer_id and
-                    self.__first_name == other.__first_name and
-                    self.__last_name == other.__last_name and
-                    self.__email == other.__email)
+            return (self.get_customer_id() == other.get_customer_id() and
+                    self.get_first_name() == other.get_first_name() and
+                    self.get_last_name() == other.get_last_name() and
+                    self.get_email() == other.get_email())
         return False
 
     def __str__(self):
-        return f"Customer short info [ID: {self.__customer_id}, Name: {self.__first_name} {self.__last_name}, Email: {self.__email}]"
+        return f"Customer short info [ID: {self.get_customer_id()}, Name: {self.get_first_name()} {self.get_last_name()}, Email: {self.get_email()}]"
 
     def __hash__(self):
         return hash(self.get_first_name()) + hash(self.get_last_name()) + hash(self.get_customer_id()) + hash(
@@ -91,9 +100,9 @@ class CustomerShortInfo:
 
 
 class Customer(CustomerShortInfo):
-    def __init__(self, customer_id, first_name, last_name, email, phone_number=None,
+    def __init__(self, first_name, last_name, email, customer_id=None, phone_number=None,
                  address=None, city=None, postal_code=None, country=None, date_joined=None):
-        super().__init__(customer_id, first_name, last_name, email)
+        super().__init__(customer_id=customer_id, first_name=first_name, last_name=last_name, email=email)
         if phone_number:
             self.set_phone_number(phone_number)
         if address:
@@ -126,8 +135,9 @@ class Customer(CustomerShortInfo):
             country = data[8].strip()
             date_joined = data[9].strip()
 
-            return Customer(customer_id, first_name, last_name, email, phone_number, address, city, postal_code,
-                            country, date_joined)
+            return Customer(customer_id=customer_id, first_name=first_name, last_name=last_name, email=email,
+                            phone_number=phone_number, address=address, city=city, postal_code=postal_code,
+                            country=country, date_joined=date_joined)
         except Exception as e:
             raise ValueError(f"Error parsing customer data: {e}")
 
@@ -135,16 +145,16 @@ class Customer(CustomerShortInfo):
     def from_dict(data: dict):
         date_time = datetime.strptime(data['date_joined'], '%Y-%m-%d %H:%M:%S') if data.get('date_joined') else None
         return Customer(
-            data['customer_id'],
-            data['first_name'],
-            data['last_name'],
-            data['email'],
-            data.get('phone_number'),
-            data.get('address'),
-            data.get('city'),
-            data.get('postal_code'),
-            data.get('country'),
-            date_time
+            customer_id=data['customer_id'],
+            first_name=data['first_name'],
+            last_name=data['last_name'],
+            email=data['email'],
+            phone_number=data.get('phone_number'),
+            address=data.get('address'),
+            city=data.get('city'),
+            postal_code=data.get('postal_code'),
+            country=data.get('country'),
+            date_joined=date_time
         )
 
     def to_dict(self):
@@ -153,12 +163,12 @@ class Customer(CustomerShortInfo):
             'first_name': self.get_first_name(),
             'last_name': self.get_last_name(),
             'email': self.get_email(),
-            'phone_number': self.get_phone_number() if hasattr(self, 'phone_number') else None,
-            'address': self.get_address() if hasattr(self, 'address') else None,
-            'city': self.get_city() if hasattr(self, 'city') else None,
-            'postal_code': self.get_postal_code() if hasattr(self, 'postal_code') else None,
-            'country': self.get_country() if hasattr(self, 'country') else None,
-            'date_joined': self.get_date_joined().strftime('%Y-%m-%d %H:%M:%S') if hasattr(self, 'date_joined') else None
+            'phone_number': self.get_phone_number(),
+            'address': self.get_address(),
+            'city': self.get_city(),
+            'postal_code': self.get_postal_code(),
+            'country': self.get_country(),
+            'date_joined': self.get_date_joined().strftime('%Y-%m-%d %H:%M:%S')
         }
 
     def get_phone_number(self):
@@ -491,3 +501,7 @@ class CustomerRepPostgresAdapter(CustomerRepBase):
 
     def get_count(self):
         return self.rep_postgres.get_count()
+
+
+a = Customer(customer_id=1, first_name='a',last_name='a',email='a@gmail.com')
+print(a)
