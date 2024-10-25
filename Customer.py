@@ -73,7 +73,7 @@ class Customer(CustomerShortInfo):
             'city': self.get_city(),
             'postal_code': self.get_postal_code(),
             'country': self.get_country(),
-            'date_joined': self.get_date_joined().strftime('%Y-%m-%d %H:%M:%S')
+            'date_joined': self.get_date_joined().strftime('%Y-%m-%d %H:%M:%S') if self.get_date_joined() else None
         }
 
     def get_phone_number(self):

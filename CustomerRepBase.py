@@ -11,7 +11,7 @@ class CustomerRepBase(ICustomerRepository):
         customer._set_id(new_id)
 
         if not self.__is_unique(customer.get_email()):
-            raise ValueError(f"Customer with this email already exists.")
+            raise ValueError("Customer with this email already exists.")
 
         self.customers.append(customer)
         self.strategy.save_all(self.customers)
@@ -29,7 +29,7 @@ class CustomerRepBase(ICustomerRepository):
 
     def replace_by_id(self, new_customer):
         if not self.__is_unique(new_customer.get_email(), new_customer.get_customer_id()):
-            raise ValueError(f"Customer with this email already exists.")
+            raise ValueError("Customer with this email already exists.")
 
         for i, customer in enumerate(self.customers):
             if customer.get_customer_id() == new_customer.get_customer_id():
@@ -48,7 +48,7 @@ class CustomerRepBase(ICustomerRepository):
     def sort_by_field(self):
         self.customers.sort(key=lambda customer: customer.get_date_joined())
 
-    # Проверка на уникальность ID и Email
+    # Проверка на уникальность email
     def __is_unique(self, email, unverifiable_customer_id=None):
         if unverifiable_customer_id:
             for customer in self.customers:
