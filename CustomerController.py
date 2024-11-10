@@ -15,6 +15,12 @@ class CustomerController(Observable):
             self.notify_observers_error(str(e))
             return 0
 
+    def remove_customer(self, customer_id):
+        try:
+            self.repository.delete_by_id(customer_id)
+        except Exception as e:
+            self.notify_observers_error(str(e))
+
     def notify_observers_error(self, error_message):
         for observer in self._Observable__observers:
             observer.handle_error(error_message)

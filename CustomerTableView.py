@@ -50,14 +50,16 @@ class CustomerTableView:
         self.prev_button = tk.Button(button_frame, text="Предыдущие 10", command=self.load_previous, **button_style)
         self.next_button = tk.Button(button_frame, text="Следующие 10", command=self.load_next, **button_style)
         self.add_button = tk.Button(button_frame, text="Добавить клиента", command=self.open_add_customer_window, **button_style)
+        self.del_button = tk.Button(button_frame, text="Удалить клиента", command=self.remove_customer,
+                                    **button_style)
 
-        # Размещаем кнопки в центре с помощью дополнительного Frame
         center_frame = tk.Frame(button_frame)
         center_frame.pack(side=tk.TOP, fill=tk.X)
 
-        self.prev_button.pack(side=tk.LEFT, padx=5, expand=True)  # Кнопка слева
-        self.next_button.pack(side=tk.LEFT, padx=5, expand=True)  # Кнопка справа
-        self.add_button.pack(side=tk.RIGHT, padx=5, expand=True)  # Кнопка для добавления клиента
+        self.prev_button.pack(side=tk.LEFT, padx=5, expand=True)
+        self.next_button.pack(side=tk.LEFT, padx=5, expand=True)
+        self.add_button.pack(side=tk.RIGHT, padx=5, expand=True)
+        self.del_button.pack(side=tk.RIGHT, padx=5, expand=True)
 
         # Загружаем данные при старте
         self.update_buttons()
@@ -88,6 +90,19 @@ class CustomerTableView:
         self.current_page += 1
         self.load_page(self.current_page)
 
+    def remove_customer(self):
+        selected_items = self.table.selection()
+
+        if not selected_items:
+            messagebox.showwarning("Внимание", "Пожалуйста, выберите клиента для удаления.")
+            return
+
+        for item in selected_items:
+            customer_id = self.table.item(item, "values")[0]
+            self.controller.remove_customer(customer_id)
+
+        self.load_page(self.current_page)
+
     def update_buttons(self, loaded_count=None):
         # Обновление состояния кнопок
 
@@ -112,5 +127,4 @@ class CustomerTableView:
         messagebox.showerror("Ошибка", f"Не удалось загрузить данные: {error_message}")
 
     def refresh_page(self):
-        # Обновляем текущую страницу после добавления нового клиента
         self.load_page(self.current_page)

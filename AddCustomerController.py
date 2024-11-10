@@ -1,3 +1,4 @@
+import datetime
 from tkinter import Toplevel, Label, Entry, Button
 from tkinter import messagebox
 from Customer import Customer
@@ -48,28 +49,26 @@ class AddCustomerController:
         # Кнопки
         Button(self.window, text="Добавить", command=self.add_customer).grid(row=8, column=0, columnspan=2)
 
-    def validate_data(self, first_name, last_name, email):
-        # Простейшая валидация
-        if not first_name or not last_name or not email:
-            return False, "Обязательные поля должны быть заполнены!"
-        if "@" not in email:  # Простейшая валидация email
-            return False, "Неверный формат email"
-        return True, ""
-
     def add_customer(self):
         first_name = self.first_name_entry.get()
         last_name = self.last_name_entry.get()
         email = self.email_entry.get()
+        phone_number = self.phone_number_entry.get()
+        address = self.address_entry.get()
+        city = self.city_entry.get()
+        postal_code = self.postal_code_entry.get()
+        country = self.country_entry.get()
+        date_joined = datetime.datetime.now()
 
-
-        valid, error_message = self.validate_data(first_name, last_name, email)
-        if not valid:
-            messagebox.showerror("Ошибка", error_message)
+        try:
+            new_customer = Customer(first_name=first_name, last_name=last_name, email=email, phone_number=phone_number,
+                            address=address, city=city, postal_code=int(postal_code), country=country,
+                            date_joined=date_joined)
+        except Exception as e:
+            messagebox.showerror("Ошибка", e)
             return
 
         try:
-            new_customer = Customer(first_name=first_name, last_name=last_name, email=email)
-
             self.parent_view.controller.repository.add_customer(new_customer)
 
             messagebox.showinfo("Успех", "Клиент успешно добавлен")
