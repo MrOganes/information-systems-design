@@ -52,6 +52,7 @@ class CustomerTableView:
         self.add_button = tk.Button(button_frame, text="Добавить клиента", command=self.open_add_customer_window, **button_style)
         self.del_button = tk.Button(button_frame, text="Удалить клиента", command=self.remove_customer,
                                     **button_style)
+        self.view_button = tk.Button(button_frame, text="Подробнее", command=self.view_customer_details, **button_style)
 
         center_frame = tk.Frame(button_frame)
         center_frame.pack(side=tk.TOP, fill=tk.X)
@@ -60,6 +61,7 @@ class CustomerTableView:
         self.next_button.pack(side=tk.LEFT, padx=5, expand=True)
         self.add_button.pack(side=tk.RIGHT, padx=5, expand=True)
         self.del_button.pack(side=tk.RIGHT, padx=5, expand=True)
+        self.view_button.pack(side=tk.LEFT, padx=5, expand=True)
 
         # Загружаем данные при старте
         self.update_buttons()
@@ -101,7 +103,7 @@ class CustomerTableView:
             customer_id = self.table.item(item, "values")[0]
             self.controller.remove_customer(customer_id)
 
-        self.load_page(self.current_page)
+        self.refresh_page()
 
     def update_buttons(self, loaded_count=None):
         # Обновление состояния кнопок
@@ -120,7 +122,7 @@ class CustomerTableView:
 
     def open_add_customer_window(self):
         # Открываем окно добавления клиента через контроллер
-        add_controller = AddCustomerController(self)
+        add_controller = AddCustomerController(self, self.controller.repository)
         add_controller.show_add_window()
 
     def handle_error(self, error_message):
@@ -128,3 +130,39 @@ class CustomerTableView:
 
     def refresh_page(self):
         self.load_page(self.current_page)
+
+    def view_customer_details(self):
+        # Получаем ID выбранного клиента
+        selected_items = self.table.selection()
+        if not selected_items:
+            messagebox.showwarning("Внимание", "Пожалуйста, выберите клиента для просмотра.")
+            return
+
+        # Получаем ID клиента
+        customer_id = self.table.item(selected_items[0], "values")[0]
+        customer = self.controller.get_customer_by_id(customer_id)
+
+        if customer:
+            self.open_customer_details_window(customer)
+        else:
+            messagebox.showwarning("Ошибка", "Не удалось загрузить информацию о клиенте.")
+
+    def open_customer_details_window(self, customer):
+        details_window = tk.Toplevel(self.root)
+        details_window.title(f"Подробная информация о клиенте {customer.get_first_name()} {customer.get_last_name()}")
+
+        # Размещение информации в окне
+        tk.Label(details_window, text=f"ID: {customer.get_customer_id()}", anchor='w').pack(padx=10, pady=5, fill='x')
+        tk.Label(details_window, text=f"Имя: {customer.get_first_name()}", anchor='w').pack(padx=10, pady=5, fill='x')
+        tk.Label(details_window, text=f"Фамилия: {customer.get_last_name()}", anchor='w').pack(padx=10, pady=5, fill='x')
+        tk.Label(details_window, text=f"Email: {customer.get_email()}", anchor='w').pack(padx=10, pady=5, fill='x')
+        tk.Label(details_window, text=f"Телефон: {customer.get_phone_number()}", anchor='w').pack(padx=10, pady=5, fill='x')
+        tk.Label(details_window, text=f"Адрес: {customer.get_address()}", anchor='w').pack(padx=10, pady=5, fill='x')
+        tk.Label(details_window, text=f"Город: {customer.get_city()}", anchor='w').pack(padx=10, pady=5, fill='x')
+        tk.Label(details_window, text=f"Почтовый код: {customer.get_postal_code()}", anchor='w').pack(padx=10, pady=5, fill='x')
+        tk.Label(details_window, text=f"Страна: {customer.get_country()}", anchor='w').pack(padx=10, pady=5, fill='x')
+        tk.Label(details_window, text=f"Дата добавления: {customer.get_date_joined()}", anchor='w').pack(padx=10, pady=5, fill='x')
+
+        # Добавляем кнопку для закрытия окна
+        close_button = tk.Button(details_window, text="Закрыть", command=details_window.destroy)
+        close_button.pack(pady=10)

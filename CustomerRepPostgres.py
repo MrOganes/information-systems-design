@@ -18,7 +18,6 @@ class CustomerRepPostgres:
                                 data['date_joined']))
         new_id = self.db.fetchone()[0]
         self.db.commit()
-        return new_id
 
     # Получить объект по ID
     def get_by_id(self, customer_id):

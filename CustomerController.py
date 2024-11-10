@@ -24,3 +24,11 @@ class CustomerController(Observable):
     def notify_observers_error(self, error_message):
         for observer in self._Observable__observers:
             observer.handle_error(error_message)
+
+    def get_customer_by_id(self, customer_id):
+        try:
+            customer = self.repository.get_by_id(customer_id)
+            return customer
+        except Exception as e:
+            self.notify_observers_error(str(e))
+            return None
