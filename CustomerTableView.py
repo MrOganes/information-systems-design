@@ -27,12 +27,13 @@ class CustomerTableView:
         self.table_frame = tk.Frame(root)
         self.table_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        self.table = ttk.Treeview(self.table_frame, columns=('ID', 'First Name', 'Last Name', 'Email'), show='headings')
-        self.table.heading('ID', text='ID')
+        self.table = ttk.Treeview(self.table_frame, columns=('ID', '№', 'First Name', 'Last Name', 'Email'), show='headings')
+        self.table.heading('№', text='№')
         self.table.heading('First Name', text='First Name')
         self.table.heading('Last Name', text='Last Name')
         self.table.heading('Email', text='Email')
 
+        self.table.column('ID', width=0, stretch=tk.NO)
         self.table.pack(fill=tk.BOTH, expand=True)
 
         # Frame для кнопок
@@ -73,8 +74,9 @@ class CustomerTableView:
             self.table.delete(row)
 
         # Заполнение таблицы
-        for customer in customers:
-            self.table.insert('', tk.END, values=(customer['customer_id'], customer['first_name'], customer['last_name'], customer['email']))
+        for i, customer in enumerate(customers):
+            self.table.insert('', tk.END, values=(customer.get_customer_id(), (self.current_page - 1)*10+i+1, customer.get_first_name(),
+                                                  customer.get_last_name(), customer.get_email()))
 
     def load_page(self, page):
         # Загрузка страницы данных
@@ -101,7 +103,7 @@ class CustomerTableView:
 
         for item in selected_items:
             customer_id = self.table.item(item, "values")[0]
-            self.controller.remove_customer(customer_id)
+            self.controller.remove_customer(int(customer_id))
 
         self.refresh_page()
 
@@ -140,7 +142,7 @@ class CustomerTableView:
 
         # Получаем ID клиента
         customer_id = self.table.item(selected_items[0], "values")[0]
-        customer = self.controller.get_customer_by_id(customer_id)
+        customer = self.controller.get_customer_by_id(int(customer_id))
 
         if customer:
             self.open_customer_details_window(customer)
