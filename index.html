@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Management</title>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+
+        // Функция для открытия формы добавления/редактирования клиента
+        async function openCustomerForm(customerId = null) {
+            // Если передан customerId, то загружаем данные клиента, иначе создаём пустую форму
+            let customerData = null;
+
+            if (customerId) {
+                // Получаем данные о клиенте, если передан customerId
+                try {
+                    const response = await fetch(`/customer/${customerId}`);
+                    if (!response.ok) {
+                        throw new Error(`Ошибка запроса: ${response.status}`);
+                    }
+
+                    // Получаем данные клиента в формате JSON
+                    customerData = await response.json();
+                } catch (error) {
+                    console.error("Ошибка при получении данных клиента:", error);
+                    alert("Не удалось загрузить данные клиента. Попробуйте снова.");
+                }
+            }
+
+            // Создаём HTML-форму
+            let formHtml = `
+                <h2>${customerId ? 'Редактировать клиента' : 'Добавить нового клиента'}</h2>
+                <form id="customerForm">
+                    <label for="first_name"><strong>Имя:</strong></label>
+                    <input required type="text" id="first_name" name="first_name" value="${customerData && customerData.first_name != null ? customerData.first_name : ''}" required><br><br>
+
+                    <label for="last_name"><strong>Фамилия:</strong></label>
+                    <input required type="text" id="last_name" name="last_name" value="${customerData && customerData.last_name != null ? customerData.last_name : ''}" required><br><br>
+
+                    <label for="email"><strong>Email:</strong></label>
+                    <input required type="email" id="email" name="email" value="${customerData && customerData.email != null ? customerData.email : ''}" required><br><br>
+
+                    <label for="phone_number">Телефон:</label>
+                    <input type="text" id="phone_number" name="phone_number" value="${customerData && customerData.phone_number != null ? customerData.phone_number : ''}"><br><br>
+
+                    <label for="address">Адрес:</label>
+                    <input type="text" id="address" name="address" value="${customerData && customerData.address != null ? customerData.address : ''}"><br><br>
+
+                    <label for="city">Город:</label>
+                    <input type="text" id="city" name="city" value="${customerData && customerData.city != null ? customerData.city : ''}"><br><br>
+
+                    <label for="postal_code">Почтовый код:</label>
+                    <input type="text" id="postal_code" name="postal_code" value="${customerData && customerData.postal_code != null ? customerData.postal_code : ''}"><br><br>
+
+                    <label for="country">Страна:</label>
+                    <input type="text" id="country" name="country" value="${customerData && customerData.country != null ? customerData.country : ''}"><br><br>
+            `
+            if(customerId){
+            formHtml+=`
+                    <label for="date_joined">Дата регистрации:</label>
+                    <input type="text" id="date_joined" name="date_joined" value="${customerData && customerData.date_joined != null ? customerData.date_joined : ''}"><br><br>
+                `
+            }
+        formHtml+=`
+        <button type="submit">${customerId ? 'Сохранить изменения' : 'Добавить клиента'}</button>
+        </form>
+        <button id="closeFormButton">Закрыть</button>
+        `;
+
+            // Открываем форму в новом окне
+            const formWindow = window.open("", "CustomerForm", "width=500,height=600");
+            formWindow.document.write(formHtml);
+            formWindow.document.close();
+
+            // Обработчик закрытия формы
+            formWindow.document.getElementById('closeFormButton').addEventListener('click', () => {
+                formWindow.close();
+            });
+
+            // Обработчик отправки формы
+            formWindow.document.getElementById('customerForm').addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const formData = new FormData(event.target);
+                const formDataObj = Object.fromEntries(formData.entries());
+
+                try {
+                    let response;
+
+                    // Если это новый клиент
+                    if (!customerId) {
+                        response = await fetch('/add_customer', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(formDataObj),
+                        });
+                    } else {
+                        // Если это редактирование существующего клиента
+                        response = await fetch(`/update_customer/${customerId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(formDataObj),
+                        });
+                    }
+
+                    if (!response.ok) {
+                        throw new Error('Ошибка при добавлении/редактировании клиента');
+                    }
+
+                    const result = await response.json();
+                    alert(result.message);
+                    formWindow.close();
+                    loadPage(currentPage);
+                } catch (error) {
+                    console.error('Ошибка при обработке данных:', error);
+                    alert('Произошла ошибка при сохранении данных. Попробуйте снова.');
+                }
+            });
+        }
+
+
+        async function delete_customer(id_customer){
+            const response = await fetch(`/delete_customer/${id_customer}`, {method: 'POST',});
+            const data = await response.json();
+            loadPage(currentPage);
+        }
+
+        async function fetchCustomerData(customerId) {
+            try {
+                // Выполняем запрос к серверу для получения данных клиента
+                const response = await fetch(`/customer/${customerId}`);
+
+                if (!response.ok) {
+                    throw new Error(`Ошибка запроса: ${response.status}`);
+                }
+
+                // Получаем данные в формате JSON
+                const customerData = await response.json();
+
+                // Формируем HTML-контент для отображения данных
+                const customerInfo = `
+        <h2>Информация о клиенте</h2>
+        <p><strong>ID:</strong> ${customerData.customer_id}</p>
+        <p><strong>Имя:</strong> ${customerData.first_name}</p>
+        <p><strong>Фамилия:</strong> ${customerData.last_name}</p>
+        <p><strong>Email:</strong> ${customerData.email}</p>
+        <p><strong>Телефон:</strong> ${customerData.phone_number}</p>
+        <p><strong>Адрес:</strong> ${customerData.address}</p>
+        <p><strong>Город:</strong> ${customerData.city}</p>
+        <p><strong>Почтовый код:</strong> ${customerData.postal_code}</p>
+        <p><strong>Страна:</strong> ${customerData.country}</p>
+        <p><strong>Дата регистрации:</strong> ${customerData.date_joined || 'Не указана'}</p>
+        `;
+
+                // Создаем новое окно для отображения данных
+                const infoWindow = window.open("", "CustomerInfo", "width=400,height=600");
+                infoWindow.document.write(customerInfo);
+                infoWindow.document.close();
+            } catch (error) {
+                console.error("Ошибка при получении данных клиента:", error);
+                alert("Не удалось загрузить данные клиента. Попробуйте снова.");
+            }
+        }
+
+        async function loadPage(page) {
+            if (page < 1) return;
+
+            const response = await fetch(`/customers?page=${page}&page_size=${pageSize}`);
+            const data = await response.json();
+
+            let next = document.getElementById('Next');
+            if(!data['has_next']){
+                next.setAttribute('disabled', '')
+            }
+            else{
+                next.removeAttribute('disabled')
+            }
+
+            let prev = document.getElementById('Prev');
+            if(!data['has_prev']){
+                prev.setAttribute('disabled', '')
+            }
+            else{
+                prev.removeAttribute('disabled')
+            }
+
+            const tableContainer = document.getElementById('table-container');
+            tableContainer.innerHTML = `
+        <table>
+        <tr>
+        <th>№</th><th>First Name</th><th>Last Name</th><th>Email</th><th>Удалить запись</th><th>Изменить запись</th><th>Посмотреть детали</th>
+        </tr>
+        ${data.customers.map((c, i) => `
+                        <tr>
+                            <td>${(page - 1) * pageSize + i + 1}</td>
+                            <td>${c.first_name}</td>
+                            <td>${c.last_name}</td>
+                            <td>${c.email}</td>
+                            <td style='text-align:center;'><button onclick='delete_customer(${c.customer_id})'>Удалить</button></td>
+                            <td style='text-align:center;'><button onclick='openCustomerForm(${c.customer_id})'>Изменить</button></td>
+                            <td style='text-align:center;'><button onclick='fetchCustomerData(${c.customer_id})'>Подробней</button></td>
+                        </tr>
+                    `).join('')}
+        </table>
+        `;
+
+            currentPage = page;
+        }
+
+
+        loadPage(currentPage);
+
+    </script>
+</head>
+<body>
+    <h1>Customer Management</h1>
+    <div id="table-container"></div>
+    <div style="text-align: center;">
+        <button id="Prev" onclick="loadPage(currentPage - 1)">Previous</button>
+        <button id="Next" onclick="loadPage(currentPage + 1)">Next</button>
+    </div>
+    <div style="text-align: center;">
+        <button onclick='openCustomerForm()'>Add Customer</button>
+    </div>
+</body>
+</html>
