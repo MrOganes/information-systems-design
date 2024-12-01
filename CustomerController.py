@@ -9,27 +9,11 @@ class CustomerController(Observable):
     def load_customers(self, page, page_size):
         try:
             customers = self.repository.get_k_n_short_list(page, page_size)
+            self.notify_observers(customers)
             return customers
         except Exception as e:
             self.notify_observers_error(str(e))
             return []
-
-    def replace_by_id(self, customer):
-        try:
-            self.repository.replace_by_id(customer)
-            return True
-        except Exception:
-            return False
-
-    def add_customer(self, customer):
-        try:
-            self.repository.add_customer(customer)
-            return True
-        except Exception as e:
-            return False
-
-    def get_total_customers(self):
-        return self.repository.get_count()
 
     def remove_customer(self, customer_id):
         try:

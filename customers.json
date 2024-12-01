@@ -12,16 +12,16 @@
         "date_joined": "2024-09-23 14:43:58"
     },
     {
-        "customer_id": 157,
-        "first_name": "ntcn",
-        "last_name": "nnn",
-        "email": "sdd@adfa.dcdo",
-        "phone_number": null,
-        "address": null,
-        "city": null,
-        "postal_code": null,
-        "country": null,
-        "date_joined": "2024-11-24 18:59:10"
+        "customer_id": 156,
+        "first_name": "John",
+        "last_name": "Doe",
+        "email": "john.doe@example.commm",
+        "phone_number": "+1234567890",
+        "address": "123 Main St",
+        "city": "New York",
+        "postal_code": 10001,
+        "country": "USA",
+        "date_joined": "2024-09-23 14:43:58"
     },
     {
         "customer_id": 156,
@@ -36,18 +36,6 @@
         "date_joined": "2024-09-23 14:43:58"
     },
     {
-        "customer_id": 157,
-        "first_name": "ntcn",
-        "last_name": "nnn",
-        "email": "sdd@adfa.dcdo",
-        "phone_number": null,
-        "address": null,
-        "city": null,
-        "postal_code": null,
-        "country": null,
-        "date_joined": "2024-11-24 18:59:10"
-    },
-    {
         "customer_id": 156,
         "first_name": "John",
         "last_name": "Doe",
@@ -58,42 +46,6 @@
         "postal_code": 10001,
         "country": "USA",
         "date_joined": "2024-09-23 14:43:58"
-    },
-    {
-        "customer_id": 157,
-        "first_name": "ntcn",
-        "last_name": "nnn",
-        "email": "sdd@adfa.dcdo",
-        "phone_number": null,
-        "address": null,
-        "city": null,
-        "postal_code": null,
-        "country": null,
-        "date_joined": "2024-11-24 18:59:10"
-    },
-    {
-        "customer_id": 156,
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john.doe@example.commm",
-        "phone_number": "+1234567890",
-        "address": "123 Main St",
-        "city": "New York",
-        "postal_code": 10001,
-        "country": "USA",
-        "date_joined": "2024-09-23 14:43:58"
-    },
-    {
-        "customer_id": 157,
-        "first_name": "ntcn",
-        "last_name": "nnn",
-        "email": "sdd@adfa.dcdo",
-        "phone_number": null,
-        "address": null,
-        "city": null,
-        "postal_code": null,
-        "country": null,
-        "date_joined": "2024-11-24 18:59:10"
     },
     {
         "customer_id": 158,
@@ -118,5 +70,29 @@
         "postal_code": null,
         "country": null,
         "date_joined": "2024-12-01 19:34:28"
+    },
+    {
+        "customer_id": 160,
+        "first_name": "\u044b\u0432\u044b\u0432\u0430",
+        "last_name": "\u044b\u0444\u0432\u0444\u044b",
+        "email": "elizbarov.oganes2016@gmail.com",
+        "phone_number": null,
+        "address": null,
+        "city": null,
+        "postal_code": null,
+        "country": null,
+        "date_joined": "2024-12-08 08:46:12"
+    },
+    {
+        "customer_id": 161,
+        "first_name": "asd",
+        "last_name": "asdasa",
+        "email": "test@test.com",
+        "phone_number": null,
+        "address": null,
+        "city": null,
+        "postal_code": null,
+        "country": null,
+        "date_joined": "2024-12-08 09:42:07"
     }
 ]

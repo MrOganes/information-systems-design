@@ -1,4 +1,7 @@
-from tkinter import Toplevel, Label, Entry, Button
+from datetime import datetime
+from tkinter import Toplevel, Label, Entry, Button, messagebox
+
+from Customer import Customer
 
 
 class CustomerAddView:
@@ -41,7 +44,26 @@ class CustomerAddView:
         self.country_entry.grid(row=7, column=1)
 
         # Кнопки
-        Button(self.window, text="Добавить", command=self.add_customer_controller.add_customer).grid(row=8, column=0, columnspan=2)
+        Button(self.window, text="Добавить", command=self.add_customer).grid(row=8, column=0, columnspan=2)
+
+    def add_customer(self):
+        first_name = self.first_name_entry.get()
+        last_name = self.last_name_entry.get()
+        email = self.email_entry.get()
+        phone_number = self.phone_number_entry.get()
+        address = self.address_entry.get()
+        city = self.city_entry.get()
+        postal_code = self.postal_code_entry.get()
+        country = self.country_entry.get()
+        date_joined = datetime.now()
+        try:
+            customer = Customer(first_name=first_name, last_name=last_name, email=email, phone_number=phone_number,
+                            address=address, city=city, postal_code=postal_code, country=country,
+                            date_joined=date_joined)
+
+            self.add_customer_controller.add_customer(customer)
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось добавить клиента: {e}")
 
     def destroy(self):
         self.window.destroy()

@@ -2,6 +2,8 @@ import datetime
 import json
 import urllib
 from http.server import SimpleHTTPRequestHandler
+
+from AddCustomerController import AddCustomerController
 from Customer import Customer
 
 class CustomerTableWeb(SimpleHTTPRequestHandler):
@@ -30,16 +32,14 @@ class CustomerTableWeb(SimpleHTTPRequestHandler):
 
                 # Загрузка клиентов
                 customers = self.custom_handler.controller.load_customers(page, page_size)
-                total_customers = self.custom_handler.controller.get_total_customers()
 
                 # Вычисляем флаги для кнопок
                 has_prev = page > 1
-                has_next = page * page_size < total_customers
+                has_next = len(customers) >= page_size
 
                 # Формируем ответ
                 response = {
                     "customers": [customer.to_dict() for customer in customers],
-                    "total": total_customers,
                     "has_prev": has_prev,
                     "has_next": has_next,
                 }
@@ -57,21 +57,24 @@ class CustomerTableWeb(SimpleHTTPRequestHandler):
                 super().do_GET()
 
         def do_POST(self):
+            add_controller = AddCustomerController(self, self.custom_handler.controller.repository)
             if self.path == "/add_customer":
                 # Добавление клиента
                 content_length = int(self.headers['Content-Length'])
                 post_data = self.rfile.read(content_length)
                 customer_data = json.loads(post_data)
-
-                customer = Customer(first_name=customer_data.get('first_name'), last_name=customer_data.get('last_name'),
+                try:
+                    customer = Customer(first_name=customer_data.get('first_name'), last_name=customer_data.get('last_name'),
                                     email=customer_data.get('email'), phone_number=customer_data.get('phone_number'),
                                     address=customer_data.get('address'), city=customer_data.get('city'),
                                     postal_code=customer_data.get('postal_code'), country=customer_data.get('country'),
                                     date_joined=datetime.datetime.now())
-                if self.custom_handler.controller.add_customer(customer):
-                    self._send_response(201, {"message": "Customer added successfully"})
+                    add_controller.add_customer(customer)
+                except Exception as e:
+                    self._send_response(400, {"error": str(e)})
                 else:
-                    self._send_response(400, {"error": "Failed to add customer"})
+                    self._send_response(201, {"message": "Customer added successfully"})
+
             elif self.path.startswith('/update_customer/'):
                 # Изменение клиента
                 customer_id = int(self.path.split("/")[-1])
@@ -80,18 +83,18 @@ class CustomerTableWeb(SimpleHTTPRequestHandler):
                 post_data = self.rfile.read(content_length)
                 customer_data = json.loads(post_data)
 
-                customer = Customer(first_name=customer_data.get('first_name'), last_name=customer_data.get('last_name'),
+                try:
+                    customer = Customer(first_name=customer_data.get('first_name'), last_name=customer_data.get('last_name'),
                                     email=customer_data.get('email'), phone_number=customer_data.get('phone_number'),
                                     address=customer_data.get('address'), city=customer_data.get('city'),
                                     postal_code=customer_data.get('postal_code'), country=customer_data.get('country'),
                                     date_joined=customer_data.get('date_joined'), customer_id=customer_id)
 
-                if self.custom_handler.controller.replace_by_id(customer):
-                    self._send_response(201, {"message": "Customer update successfully"})
+                    add_controller.replace_by_id(customer)
+                except Exception as e:
+                    self._send_response(400, {"error": str(e)})
                 else:
-                    self._send_response(400, {"error": "Failed to update customer"})
-            else:
-                self._send_response(404, {"error": "Endpoint not found"})
+                    self._send_response(201, {"message": "Customer update successfully"})
 
         def _send_response(self, status_code, data):
             """Формирование HTTP-ответа."""

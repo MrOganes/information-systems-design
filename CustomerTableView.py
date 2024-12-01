@@ -80,7 +80,7 @@ class CustomerTableView:
 
     def load_page(self, page):
         # Загрузка страницы данных
-        loaded_count = self.controller.load_customers(page, self.page_size)
+        loaded_count = len(self.controller.load_customers(page, self.page_size))
         self.update_buttons(loaded_count)
 
     def load_previous(self):
