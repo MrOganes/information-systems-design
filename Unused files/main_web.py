@@ -9,7 +9,7 @@ from JsonFileStrategy import JsonFileStrategy
 PORT = 8000
 
 # Инициализация репозитория
-repository = CustomerRepFileAdapter(JsonFileStrategy('customers.json'))
+repository = CustomerRepFileAdapter(JsonFileStrategy('Unused files/customers.json'))
 
 # Инициализация контроллера
 controller = CustomerController(repository)
