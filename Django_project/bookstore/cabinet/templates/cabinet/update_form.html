@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{{title}}</title>
+</head>
+<body style="text-align: center; display: grid; place-items: center;">
+
+    {% if message %}
+        <script>
+            alert("{{ message }}");
+        </script>
+    {% endif %}
+
+    <h2>Информация о пользователе</h2>
+        <div>
+             <form method="post"
+                   {% if title == "Изменение данных" %}
+                        action="{% url 'update' customer_id %}"
+                    {% else %}
+                         action="{% url 'add' %}"
+                    {% endif %}
+             style="text-align:left;">
+                 {% csrf_token %}
+                 {{ form.as_p }}
+
+                <div style="text-align: center">
+                    <button type="submit" class="btn">Сохранить изменения</button>
+                </div>
+            </form>
+        </div>
+</body>
+</html>
